@@ -25,6 +25,7 @@ class Process {
   long uptime_;
   std::string user_;
   std::string command_;
+  long second_;
 };
 
 #endif

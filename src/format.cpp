@@ -15,6 +15,6 @@ string Format::ElapsedTime(long seconds) {
     seconds = seconds %3600;
     minute = seconds/60;
     seconds = seconds %60;
-
-
-     return to_string(hour) +":"+to_string(minute)+":"+to_string(seconds); }
+    string seconds_str = to_string(seconds);
+    seconds_str.insert(0, 2 - seconds_str.length(), '0');
+     return to_string(hour) +":"+to_string(minute)+":"+seconds_str; }

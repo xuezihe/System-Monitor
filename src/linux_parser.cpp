@@ -1,13 +1,21 @@
-#pragma once
 #include "linux_parser.h"
 
 #include <dirent.h>
 #include <unistd.h>
 
-#include <filesystem>
 #include <sstream>
 #include <string>
 #include <vector>
+
+// requires a higher version of g++
+# if __has_include(<filesystem>)
+    #include <filesystem>  
+    namespace fs = std::filesystem;  
+#else
+    // works for virtual machine version ==> requires target_link_libraries(... stdc++fs) in 13:CMakeLists.txt
+    #include <experimental/filesystem>
+    namespace fs = std::experimental::filesystem;
+# endif
 
 
 using std::stof;
@@ -64,7 +72,7 @@ vector<int> LinuxParser::Pids() {
       string filename(file->d_name);
       if (std::all_of(filename.begin(), filename.end(), isdigit)) {
         int pid = stoi(filename);
-        pids.push_back(pid);
+        pids.emplace_back(pid);
       }
     }
   }
@@ -80,7 +88,7 @@ vector<int> LinuxParser::Pids(){
     for (const auto& entry : std::filesystem::directory_iterator(kProcDirectory)) {
       std::string pid = entry.path().filename().string();
       if (std::all_of(pid.begin(), pid.end(), isdigit)) {
-        pids.push_back(stoi(pid));
+        pids.emplace_back(stoi(pid));
       }
     }
   }
@@ -138,17 +146,16 @@ long LinuxParser::ActiveJiffies(int pid) {
     std::getline(stream, line);
     std::istringstream streamline(line);
     while (streamline >> value) {
-      valuevec.push_back(value);
+      valuevec.emplace_back(value);
     }
   }
   //reference: https://stackoverflow.com/questions/16726779/how-do-i-get-the-total-cpu-usage-of-an-application-from-proc-pid-stat/16736599#16736599
-  long utime{0}, stime{0}, cutime{0}, cstime{0}, starttime{0};
+  long utime{0}, stime{0}, cutime{0}, cstime{0};
   if (valuevec.size() >= 22) {
     utime = std::stol(valuevec[13]);
     stime = std::stol(valuevec[14]);
     cutime = std::stol(valuevec[15]);
     cstime = std::stol(valuevec[16]);
-    starttime = std::stol(valuevec[21]);
   }
   out = utime + stime + cutime + cstime;
   return out / sysconf(_SC_CLK_TCK);
@@ -181,7 +188,7 @@ vector<string> LinuxParser::CpuUtilization() {
     std::istringstream streamline(line);
     streamline >> key;
     while (streamline >> value) {
-      out.push_back(value);
+      out.emplace_back(value);
     }
   }
   return out;
@@ -250,7 +257,7 @@ string LinuxParser::Ram(int pid ) {
       {
         std::istringstream streamline(line);
         streamline>>key;
-        if (key =="VmSize:")
+        if (key =="VmRSS:")
         {
           streamline>>ram;
           ramsize = std::stol(ram)/1000; 
@@ -308,7 +315,6 @@ string LinuxParser::User(int pid ) {
 // REMOVE: [[maybe_unused]] once you define the function
 long LinuxParser::UpTime(int pid) { 
   std::ifstream stream(kProcDirectory + to_string(pid) + kStatFilename);
-  long out;
   string line;
   string value;
   vector<string> valuevec;
@@ -316,16 +322,12 @@ long LinuxParser::UpTime(int pid) {
     std::getline(stream, line);
     std::istringstream streamline(line);
     while (streamline >> value) {
-      valuevec.push_back(value);
+      valuevec.emplace_back(value);
     }
   }
   //reference: https://stackoverflow.com/questions/16726779/how-do-i-get-the-total-cpu-usage-of-an-application-from-proc-pid-stat/16736599#16736599
-  long utime{0}, stime{0}, cutime{0}, cstime{0}, starttime{0};
+  long starttime{0};
   if (valuevec.size() >= 22) {
-    utime = std::stol(valuevec[13]);
-    stime = std::stol(valuevec[14]);
-    cutime = std::stol(valuevec[15]);
-    cstime = std::stol(valuevec[16]);
     starttime = std::stol(valuevec[21]);
   }
   return starttime / sysconf(_SC_CLK_TCK); }
