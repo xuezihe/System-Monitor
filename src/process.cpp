@@ -18,7 +18,7 @@ Process::Process(int pid){
 
     user_ = LinuxParser::User(pid);
     command_ = LinuxParser::Command(pid);
-    //second_ = LinuxParser::UpTime() - uptime_;
+    second_ = LinuxParser::UpTime() - uptime_;
     float activejiff = float(LinuxParser::ActiveJiffies(pid));
     float totaluptime = float(LinuxParser::UpTime())*sysconf(_SC_CLK_TCK);
     cpuutilization_ = activejiff/(totaluptime-uptime_*sysconf(_SC_CLK_TCK));
@@ -51,7 +51,7 @@ string Process::Ram() { return std::to_string(ram_); }
 string Process::User() { return user_; }
 
 // Return the age of this process (in seconds)
-long int Process::UpTime() { return uptime_; }
+long int Process::UpTime() { return second_; }
 
 // Overload the "less than" comparison operator for Process objects
 // REMOVE: [[maybe_unused]] once you define the function
